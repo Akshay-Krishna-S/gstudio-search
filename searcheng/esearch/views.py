@@ -20,11 +20,11 @@ def get_search(request):
 														"fields": ["name^2", "altnames", "content"]
 				}}})
 			hits = "No of docs found: %d" % res['hits']['total']
-			result = ""
+			res_list = ['Result :', hits]
 			for doc in res['hits']['hits']:
-				result = result + doc['_id'] + "\n"
+				res_list.append(doc['_id']+" : "+doc['_source']['name'])	#printing only the id for the time being along with the node name
 
-			return render(request, 'esearch/basic.html', {'content': ['Result :', hits, result]})
+			return render(request, 'esearch/basic.html', {'content': res_list})
 
 	else:
 		form = SearchForm()
