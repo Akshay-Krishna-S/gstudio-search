@@ -13,8 +13,7 @@ def get_search(request):
 	if request.method == 'POST':
 		form = SearchForm(request.POST)
 		if form.is_valid():
-			#query = form.cleaned_data['searchq']
-			query = request.POST['query']
+			query = form.cleaned_data['query']
 			res = es.search(index="gstudio", body={"query": {"multi_match": {
 														"query": query,
 														"type": "best_fields",
