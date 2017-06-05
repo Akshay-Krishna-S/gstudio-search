@@ -14,7 +14,11 @@ def get_search(request):
 		form = SearchForm(request.POST)
 		if form.is_valid():
 			query = form.cleaned_data['query']
-			res = es.search(index="gstudio", body={"query": {"multi_match": {
+			query = request.POST['query']
+			select = request.POST['select']
+			if(select=="all"):
+				select = ""
+			res = es.search(index="gstudio",doc_type=select, body={"query": {"multi_match": {
 														"query": query,
 														"type": "best_fields",
 														"fields": ["name^2", "altnames", "content"]
