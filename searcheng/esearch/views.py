@@ -21,10 +21,22 @@ def get_search(request):
 				}}})
 			hits = "No of docs found: %d" % res['hits']['total']
 			res_list = ['Result :', hits]
+			med_list = []
 			for doc in res['hits']['hits']:
-				res_list.append(doc['_id']+" : "+doc['_source']['name'])	#printing only the id for the time being along with the node name
+				#if(doc['_source']['if_file'] in doc['_source'].keys()):
+					# if(doc['_source']['if_file']['original']['relurl'] is not None):
+					# 	med_list.append()					
+				if('if_file' in doc['_source'].keys()):
+					s = doc['_source']['name']
+					if '.' in s:
+						l = s.index('.')
+					else:
+						l = len(s)
+					med_list.append([doc['_id'],s[0:l],doc['_source']['if_file']['original']['relurl']])	#printing only the id for the time being along with the node name
+				else:
+					med_list.append([doc['_id'],doc['_source']['name'],None])
 
-			return render(request, 'esearch/basic.html', {'content': res_list})
+			return render(request, 'esearch/basic.html', {'header':res_list, 'content': med_list})
 
 	else:
 		form = SearchForm()

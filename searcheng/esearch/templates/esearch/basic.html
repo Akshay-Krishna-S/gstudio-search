@@ -1,7 +1,41 @@
+{% load static %}
+
 {% block content %}
 
-	{% for c in content %}
+	{% for c in header %}
 		<p>{{c}}</p>
+	{% endfor %}
+
+	{% for c in content %}
+		{% for k in c %}
+			{% if k is not None %}
+				<p>{{k}}</p>
+				{% if ".png" in k or ".jpeg" in k or ".gif" in k %}
+					<img src="{% static k %}" alt="Image" />
+				{% elif ".mpeg" in k or ".mp3" in k %}
+					<audio controls>
+  						<source src="{% static k %}" type="audio/mpeg">
+  						<source src="{% static k %}" type="audio/mp3">
+						Your browser does not support the audio tag.
+					</audio>
+				{% elif ".mp4" in k or ".mov" in k %}
+					<video width="320" height="240" controls>
+						<source src="{% static k %}" type="video/mp4">
+						<source src="{% static k %}" type="video/ogg">
+						<source src="{% static k %}" type="video/mov">
+						Your browser does not support the video tag.
+					</video>
+				{% elif ".txt" in k or ".pdf" in k or ".vtt" in k %}
+					<embed src="{% static k %}" width="800" height="300">
+
+				{% else %}
+					<p>{{k}}</p>
+				{% endif %}
+			{% else %}
+				<p>Media not present</p>
+			{% endif %}
+		{% endfor %}
+		<br />
 	{% endfor %}
 
 {% endblock %}

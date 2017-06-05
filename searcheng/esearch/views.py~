@@ -13,16 +13,19 @@ def get_search(request):
 	if request.method == 'POST':
 		form = SearchForm(request.POST)
 		if form.is_valid():
-			#query = form.cleaned_data['searchq']
-			query = request.POST['query']
-			print(query)
+			query = form.cleaned_data['searchq']
+			#query = request.POST['query']
 			res = es.search(index="gstudio", body={"query": {"multi_match": {
 														"query": query,
 														"type": "best_fields",
 														"fields": ["name^2", "altnames", "content"]
 				}}})
-			print(res)
-			return render(request, 'esearch/basic.html', {'result':query})
+			hits = "No of docs found: %d" % res['hits']['total']
+			result = ""
+			for doc in res['hits']['hits']:
+				result = result + doc['_id'] + "\n"
+
+			return render(request, 'esearch/basic.html', {'content': ['Result :', hits, result]})
 
 	else:
 		form = SearchForm()
