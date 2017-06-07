@@ -9,16 +9,16 @@ es = Elasticsearch(['http://elsearch:changeit@localhost:9200'])
 
 
 def get_search(request):
-
+	#if the search button is pressed, it is a POST request
 	if request.method == 'POST':
 		form = SearchForm(request.POST)
 		if form.is_valid():
+			#retrieving the query text in search box
 			query = form.cleaned_data['query']
 			print(query)
 			select = request.POST['select']
 			if(select=="all"):
 				select = ""
-
 			res = es.search(index="nroer",doc_type=select, body={"query": {
 																			"multi_match": {
 																				"query" : query,
@@ -44,6 +44,7 @@ def get_search(request):
 																})
 			hits = "No of docs found: %d" % res['hits']['total']
 			res_list = ['Result :', hits]
+			#med_list is the list which will be passed to the html file.
 			med_list = []
 			for doc in res['hits']['hits']:
 				#if(doc['_source']['if_file'] in doc['_source'].keys()):
@@ -60,7 +61,7 @@ def get_search(request):
 					med_list.append([doc['_id'],doc['_source']['name'],None,doc['_score']])
 
 			return render(request, 'esearch/basic.html', {'header':res_list, 'content': med_list})
-
+	#if the search page is loaded for the first time
 	else:
 		form = SearchForm()
 
