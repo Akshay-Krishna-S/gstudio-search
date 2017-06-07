@@ -9,12 +9,10 @@
 	{% for c in content %}
 		<!-- c is an array having document id, document name, file path with extension -->
 		{% for k in c %}
-<<<<<<< HEAD
-			{% if k is not None %}
-=======
+
 			{% if k is not None %} <!-- if k is None, means it is not a media file -->
 				<!-- rendering image types: png,jpeg,gif -->
->>>>>>> 1bab609e763d4817e09c1cdcd4352e22cee3b131
+
 				{% if ".png" in k or ".jpeg" in k or ".gif" in k %}
 					<img src="{% static k %}" alt="Image" />
 				<!-- rendering audio types:mpeg,mp3 -->
