@@ -9,7 +9,6 @@
 	{% for c in content %}
 		{% for k in c %}
 			{% if k is not None %}
-				<p>{{k}}</p>
 				{% if ".png" in k or ".jpeg" in k or ".gif" in k %}
 					<img src="{% static k %}" alt="Image" />
 				{% elif ".mpeg" in k or ".mp3" in k %}
@@ -35,6 +34,7 @@
 				<p>Media not present</p>
 			{% endif %}
 		{% endfor %}
+		<p>-----------------------------------------------------------------------------------------------------------</p>
 		<br />
 	{% endfor %}
 
