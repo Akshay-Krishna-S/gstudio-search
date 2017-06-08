@@ -19,10 +19,37 @@ def get_search(request):
 			select = request.POST['select']
 			if(select=="all"):
 				select = ""
-			res = es.search(index="nroer",doc_type=select, body={"query": {
+
+			suggestion = {
+				"entity-suggest": {
+					"text": query,
+					"term": {
+						"analyzer": "standard",
+						"field":"name"
+					},
+					"term": {
+						"analyzer": "standard",
+						"field": "altnames"
+					},
+					"term": {
+						"analyzer": "standard",
+						"field": "content"
+					},
+					"term": {
+						"analyzer": "standard",
+						"field": "tags"
+					}
+				}
+			}
+			res = es.suggest(body=suggestion, index='nroer_pro')
+			print(res)
+			if(len(res['entity-suggest'][0]['options'])>0):
+				query = (res['entity-suggest'][0]['options'][0])['text']
+			res = es.search(index="nroer_pro",doc_type=select, body={"query": {
 																			"multi_match": {
 																				"query" : query,
 																				"type": "best_fields",
+																				#"fuzziness": "AUTO",
 																				"fields": ["name^2", "altnames", "content", "tags"],
 																				"minimum_should_match": "30%"
 																				}
@@ -43,7 +70,7 @@ def get_search(request):
 																	}
 																})
 			hits = "No of docs found: %d" % res['hits']['total']
-			res_list = ['Result :', hits]
+			res_list = ['Showing results for %s :' % query, hits]
 			#med_list is the list which will be passed to the html file.
 			med_list = []
 			for doc in res['hits']['hits']:
