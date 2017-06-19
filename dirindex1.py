@@ -553,10 +553,6 @@ def main():
 									"type": "text",
 									"analyzer": "trigram"
 								},
-								# "reverse": {
-								# 	"type": "text",
-								# 	"analyzer": "reverse"
-								# }
 							}
 						},
 						"tags": {
