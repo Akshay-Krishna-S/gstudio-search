@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from elasticsearch import Elasticsearch		
-import json
+import re
 
 from .forms import SearchForm
 
@@ -9,25 +9,243 @@ es = Elasticsearch(['http://elsearch:changeit@localhost:9200'])
 
 
 def get_search(request):
-
+	#if the search button is pressed, it is a POST request
+	res1_list = []
 	if request.method == 'POST':
 		form = SearchForm(request.POST)
 		if form.is_valid():
-			query = form.cleaned_data['searchq']
-			#query = request.POST['query']
-			res = es.search(index="gstudio", body={"query": {"multi_match": {
-														"query": query,
-														"type": "best_fields",
-														"fields": ["name^2", "altnames", "content"]
-				}}})
+			#retrieving the query text in search box
+			query = form.cleaned_data['query']
+			print(query)
+			query_display = query
+			select = request.POST['select']
+			if(select=="all"):
+				select = "Author,image,video,text,application,audio,NotMedia"
+
+			# q = query.rsplit(" ")
+			# print(q)
+			# for qitem in q:
+			suggestion = {
+				"entity-suggest": {
+					"text": query,
+					"term": {
+						"analyzer": "standard",
+						"field":"name",
+						"min_word_length": 1,
+						"prefix_length": 0
+					},
+					"term": {
+						"analyzer": "standard",
+						"field": "altnames",
+						"min_word_length": 1,
+						"prefix_length": 0
+					},
+					"term": {
+						"analyzer": "standard",
+						"field": "content",
+						"min_word_length": 1,
+						"prefix_length": 0
+					},
+					"term": {
+						"analyzer": "standard",
+						"field": "tags",
+						"min_word_length": 1,
+						"prefix_length": 0
+					}
+				}
+			}
+			phsug = {
+				"suggest": {
+					"text": query,
+					#"simple_phrase": {
+						"phrase": {
+							"field": "name.trigram",
+							"min_word_length": 3,
+							"prefix_length": 0,
+							"gram_size": 3,
+							"direct_generator": [ {
+					          "field": "name.trigram",
+					          "suggest_mode": "always"
+					        } ],
+					        "highlight": {
+					          "pre_tag": "<em>",
+					          "post_tag": "</em>"
+					        }
+						#}
+					},
+					#"simple_phrase": {
+						"phrase": {
+							"field": "altnames.trigram",
+							"min_word_length": 3,
+							"prefix_length": 0,
+							"gram_size": 3,
+							"direct_generator": [ {
+					          "field": "altnames.trigram",
+					          "suggest_mode": "always"
+					        } ],
+					        "highlight": {
+					          "pre_tag": "<em>",
+					          "post_tag": "</em>"
+					        }
+						#}
+					},
+					#"simple_phrase": {
+						"phrase": {
+							"field": "content.trigram",
+							"min_word_length": 3,
+							"prefix_length": 0,
+							"gram_size": 3,
+							"direct_generator": [ {
+					          "field": "content.trigram",
+					          "suggest_mode": "always"
+					        } ],
+					        "highlight": {
+					          "pre_tag": "<em>",
+					          "post_tag": "</em>"
+					        }
+						#}
+					},
+					#"simple_phrase": {
+						"phrase": {
+							"field": "tags.trigram",
+							# "min_word_length": 1,
+							# "prefix_length": 0,
+							"gram_size": 3,
+							"direct_generator": [ {
+					          "field": "tags.trigram",
+					          "suggest_mode": "always",
+					          "prefix_length": 0,
+					          "min_word_length": 3,
+					        } ],
+					        "highlight": {
+					          "pre_tag": "<em>",
+					          "post_tag": "</em>"
+					        }
+						}
+					#}
+				}
+			}
+			res = es.suggest(body=phsug, index='nroer_pro')
+			print(res)
+			if(len(res['suggest'][0]['options'])>0):
+				res1_list = ['Search instead for <a href="">%s</a>'%(query)]
+				query = (res['suggest'][0]['options'][0])['text']
+				query_display = (res['suggest'][0]['options'][0])['highlighted']
+			# else:
+			# 	newq += qitem+" "
+			# query = newq
+			# print(query)
+			# if(len(res['suggest'][0]['options'])>0):
+			# 	query = (res['suggest'][0]['options'][0])['text']
+			res = es.search(index="nroer_pro",doc_type=select, body={"query": {
+																			"multi_match": {
+																				"query" : query,
+																				"type": "best_fields",
+																				"fields": ["name^2", "altnames", "content", "tags"],
+																				"minimum_should_match": "30%"
+																				}
+																			},
+																	"rescore": {
+																		"window_size": 30,
+																		"query": {
+																			"rescore_query": {
+																				"bool": {
+																					"should": [
+																						{"match_phrase": {"name": { "query": query, "slop":10}}},
+																						{"match_phrase": {"altnames": { "query": query, "slop": 10}}},
+																						{"match_phrase": {"content": { "query": query, "slop": 10}}}
+																					]
+																				}
+																			}
+																		}
+																	}
+																})
 			hits = "No of docs found: %d" % res['hits']['total']
-			result = ""
-			for doc in res['hits']['hits']:
-				result = result + doc['_id'] + "\n"
+			res_list = ['Showing results for %s :' % query_display, hits]
+			#med_list is the list which will be passed to the html file.
+			med_list = []
+			for doc in res['hits']['hits']:					
+				if('if_file' in doc['_source'].keys()):
+					s = doc['_source']['name']
+					if '.' in s:
+						l = s.index('.')
+					else:
+						l = len(s)
+					med_list.append([doc['_id'],s[0:l],doc['_source']['if_file']['original']['relurl'],doc['_score'],doc['_source']['content']])	#printing only the id for the time being along with the node name
+				else:
+					med_list.append([doc['_id'],doc['_source']['name'],None,doc['_score'],doc['_source']['content']])
 
-			return render(request, 'esearch/basic.html', {'content': ['Result :', hits, result]})
+			if(len(res1_list)>0):
+				return render(request, 'esearch/basic.html', {'header':res_list, 'alternate': res1_list, 'content': med_list})
+			return render(request, 'esearch/basic.html', {'header':res_list, 'content': med_list})
 
+	#if the search page is loaded for the first time
 	else:
 		form = SearchForm()
 
 	return render(request, 'esearch/sform.html', {'form':form})
+
+
+# phsug = {
+# 				"suggest": {
+# 					"text": query,
+# 						"phrase": {
+# 							"field": "name.trigram",
+# 							"min_word_length": 1,
+# 							"prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "name.trigram",
+# 					          "suggest_mode": "always"
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						},
+# 						"phrase": {
+# 							"field": "altnames.trigram",
+# 							"min_word_length": 1,
+# 							"prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "altnames.trigram",
+# 					          "suggest_mode": "always"
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						},
+# 						"phrase": {
+# 							"field": "content.trigram",
+# 							"min_word_length": 1,
+# 							"prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "content.trigram",
+# 					          "suggest_mode": "always"
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						},
+# 						"phrase": {
+# 							"field": "tags",
+# 							# "min_word_length": 1,
+# 							# "prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "tags",
+# 					          "suggest_mode": "always",
+# 					          "prefix_length": 0,
+# 					          "min_word_length": 1,
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						}
+# 					}
+# 			}
