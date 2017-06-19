@@ -52,8 +52,6 @@ def create_map(document):
 			group_map[document["id"]["$oid"]]=document["name"]
 
 
-
-
 def main():
 	dir = '/home/nazgul/Ashwin/data/rcs-repo/'
 	index_directory(dir)
