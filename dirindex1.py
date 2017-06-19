@@ -518,7 +518,7 @@ def main():
 						}
 					}
 				},
-				"RelationType": {	#one doc has content as null so the custom analyzer may not be required
+				"RelationType": {	
 					"properties": {
 						"name": {
 							"type": "text",
