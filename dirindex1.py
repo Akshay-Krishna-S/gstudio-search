@@ -6,6 +6,10 @@ import json
 es = Elasticsearch("http://elsearch:changeit@localhost:9200")
 index_type = ""
 
+
+all_map = {}
+author_map = {}
+group_map = {}
 def index_directory(dir):
 	k = 1
 	for path, dirs, files in os.walk(dir):
@@ -28,6 +32,7 @@ def index_file(fname,k):
 
 	document["id"] = document.pop("_id")
 	document["type"] = document.pop("_type")
+	create_map(document)
 	if("object_value" in document.keys()):
 		document["object_value"] = str(document["object_value"])	#for consistent mapping 
 
@@ -59,8 +64,21 @@ def index_file(fname,k):
 	else:
 		index_type = "DontCare"
 
-	es.index(index='nroer_pro', doc_type=index_type, id=document["id"]["$oid"], body=json.dumps(document))
+	#es.index(index='nroer_pro', doc_type=index_type, id=document["id"]["$oid"], body=json.dumps(document))
 	print("indexed document %d" % k)
+
+
+def create_map(document):
+	if "name" in document.keys():
+		all_map[document["id"]["$oid"]]
+		if document["type"]=="Author":
+			ids=[]
+			ids.append(document["id"]["$oid"])
+			ids.append(document["name"])
+			author_map[document["created_by"]] = ids
+		if document["type"]=="Group":
+			group_map[document["id"]["$oid"]]=document["name"]
+
 
 def main():
 	print("Starting the indexing process")
@@ -723,8 +741,28 @@ def main():
 	print("Response for index creation")
 	print(res)
 
-	dir = '/home/dvjsm/Gstudio/nroer/rcs-repo/'
+	dir = '/home/nazgul/Ashwin/data/rcs-repo/'
 	index_directory(dir)
+
+	f = open("all_mappings.txt","a")
+	for i in all_map.keys():
+		strs=i+all_map[i]+"\n"
+		f.write(strs)
+	f.close()
+
+	f = open("author_mappings.txt","a")
+	for i in all_map.keys():
+		strs=i+all_map[i]+"\n"
+		f.write(strs)
+	f.close()
+
+	f = open("group_mappings.txt","a")
+	for i in all_map.keys():
+		strs=i+all_map[i]+"\n"
+		f.write(strs)
+	f.close()
+
+
 
 main()
 
