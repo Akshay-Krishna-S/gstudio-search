@@ -2,11 +2,17 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from elasticsearch import Elasticsearch		
 import re
-
 from .forms import SearchForm
 
 es = Elasticsearch(['http://elsearch:changeit@localhost:9200'])
-
+author_map = {}
+f = open("esearch/author_mappings.txt","r")
+authors = f.readlines()
+for l in authors:
+	k = l.split(':')
+	auth_name = (k[1].split(';'))[1]
+	author_map[str(auth_name)] = k[0] #post gre sql ids
+f.close()
 def resources_in_group(res,group_select):
 	results = []
 	returnList = []
@@ -35,8 +41,8 @@ def resources_in_group(res,group_select):
 	print(results)
 	return results
 
-
 def get_search(request):
+	flag = 0 
 	#if the search button is pressed, it is a POST request
 	res1_list = []; fname = 0; fcontent =0; ftags = 0;
 	if request.method == 'POST':
@@ -53,76 +59,74 @@ def get_search(request):
 			if group_select=="all" and select!="Author":
 				pass
 			elif select=="Author":
-				author_contrib(request,group_select,select)
+				get_contributions(select,group_select,query)
 			elif group_select!="all"and select!="Author":
 				pass
-
-
-
 
 			if(select=="all"):
 				select = "Author,image,video,text,application,audio,NotMedia"
 
-			suggestion = {
-				"entity-suggest": {
-					"text": query,
-					"term": {
-						#"analyzer": "standard",
-						"field":"name",
-						"min_word_length": 2,
-						"prefix_length": 0
-					},
-					"term": {
-						#"analyzer": "standard",
-						"field": "altnames",
-						"min_word_length": 2,
-						"prefix_length": 0
-					},
-					"term": {
-						#"analyzer": "standard",
-						"field": "content",
-						"min_word_length": 2,
-						"prefix_length": 0
-					},
-					"term": {
-						#"analyzer": "standard",
-						"field": "tags",
-						"min_word_length": 2,
-						"prefix_length": 0
-					}
-				}
-			}
-			phsug_name = {
+			# suggestion = {
+			# 	"entity-suggest": {
+			# 		"text": query,
+			# 		"term": {
+			# 			#"analyzer": "standard",
+			# 			"field":"name",
+			# 			"min_word_length": 2,
+			# 			"prefix_length": 0
+			# 		},
+			# 		"term": {
+			# 			#"analyzer": "standard",
+			# 			"field": "altnames",
+			# 			"min_word_length": 2,
+			# 			"prefix_length": 0
+			# 		},
+			# 		"term": {
+			# 			#"analyzer": "standard",
+			# 			"field": "content",
+			# 			"min_word_length": 2,
+			# 			"prefix_length": 0
+			# 		},
+			# 		"term": {
+			# 			#"analyzer": "standard",
+			# 			"field": "tags",
+			# 			"min_word_length": 2,
+			# 			"prefix_length": 0
+			# 		}
+			# 	}
+			# }
+			phsug_name = {												#json body of phrase suggestion in name field
 				"suggest": {
-					"text": query,
+					"text": query,										#the query for which we want to find suggestion
 					#"simple_phrase": {
-						"phrase": {
-							"field": "name.trigram",
-							"gram_size": 3,
-							"max_errors": 2,
+						"phrase": {											
+							"field": "name.trigram",					#in which indexed field to find the suggestion
+							"gram_size": 3,								#this is the max shingle size
+							"max_errors": 2,							#the maximum number of terms that can be misspelt in the query
 							"direct_generator": [ {
 					          "field": "name.trigram",
 					          #"suggest_mode": "missing",
 					          "min_word_length": 2,
-							  "prefix_length": 0,
+							  "prefix_length": 0,						#misspelling in a single word may exist in the first letter itself
+					          "suggest_mode":"missing"					#search for suggestions only if the query isnt present in the index
 					        } ],
-					        "highlight": {
+					        "highlight": {								#to highlight the suggested word
 					          "pre_tag": "<em>",
 					          "post_tag": "</em>"
 					        },
-					        "collate": {
+					        "collate": {								#this is used to check if the returned suggestion exists in the index
 					        	"query": {
 					        		"inline": {
-					        			"match_phrase": {
+					        			"match_phrase": {				#matching the returned suggestions with the existing index
 					        				"{{field_name}}": {
 						        				"query": "{{suggestion}}",
-						        				"slop": 2
+						        				"slop": 2					
 						        			}
 					        			}
 					        		}
 					        	},
 					        	"params": {"field_name": "name"},
-					        	"prune": True
+					        	"prune": True							#to enable collate_match of suggestions
 					        }
 					},
 			}
@@ -145,7 +149,7 @@ def get_search(request):
 					# 	#}
 					# },
 					#}
-			phsug_content = {
+			phsug_content = {											#json body of phrase suggestion in content field
 				"suggest": {
 					"text": query,
 					"phrase": {
@@ -180,7 +184,7 @@ def get_search(request):
 				}
 			}
 
-			phsug_tags = {
+			phsug_tags = {												#json body of phrase suggestion in content field
 				"suggest": {
 					"text": query,
 					"phrase": {
@@ -226,16 +230,16 @@ def get_search(request):
 		# 		print("fuck", query)
 
 		# else:
-		sname,scontent,stag = 0.0,0.0,0.0
-		query_name,query_content,query_tags="","",""
-		query_display_name,query_display_content,query_display_tags="","",""
-		res = es.suggest(body=phsug_name, index='nroer_pro')
-		print(res)
-		if(len(res['suggest'][0]['options'])>0):
+		sname,scontent,stag = 0.0,0.0,0.0											#scores of first item in suggestions list with collate_match=True
+		query_name,query_content,query_tags="","",""								#the top search query with collate_match=true suggested by phsug_name, phsug_content, phsug_tags suggest bodies
+		query_display_name,query_display_content,query_display_tags="","",""		
+		res = es.suggest(body=phsug_name, index='nroer_pro')						#first we search for suggestion in the name field as it has the highest priority
+		print(res)																					
+		if(len(res['suggest'][0]['options'])>0):									#if we get a suggestion means the phrase doesnt exist in the index
 			for sugitem in res['suggest'][0]['options']:
-				if sugitem['collate_match'] == True:
-					query_name = sugitem['text']
-					query_display_name = sugitem['highlighted']
+				if sugitem['collate_match'] == True:								#we find the suggestion with collate_match = True
+					query_name = sugitem['text']				
+					query_display_name = sugitem['highlighted']						#the query to be displayed onto the search results screen
 					sname = sugitem['score']
 					fname = 1
 					#print(res)
@@ -246,7 +250,7 @@ def get_search(request):
 																		"name": query,
 																	}
 				}})['hits']['total']>0):
-				fname = 1
+				fname = 1															#set fname = 1 when we found a suggestion or we found a hit in the indexed data
 				query_name = query
 
 		#if(fname==0):
@@ -310,17 +314,17 @@ def get_search(request):
 			# 	query = (res['suggest'][0]['options'][0])['text']
 		
 		#what if all are 1 and 2/3 names are same but the third one has higher score
-		if((fname==1 and query_name==query) or (fcontent==1 and query_content==query) or (ftags==1 and query_tags==query)):
-			#query remains the same
+		if((fname==1 and query_name==query) or (fcontent==1 and query_content==query) or (ftags==1 and query_tags==query)): 
+			#if the original query is the query to be searched
 			query_display = query
-		elif(fname==0 and fcontent==0 and ftags==0):
-			#query remains same
+		elif(fname==0 and fcontent==0 and ftags==0):																		
+			#if we didnt find any suggestion, neither did we find the query already indexed->query remains same
 			query_display = query
-		else:
-			res1_list = ['Search instead for <a href="">%s</a>'%(query)]
-			if(sname>=scontent and sname>=stag):
+		else: #if we found a suggestion 
+			res1_list = ['Search instead for <a href="">%s</a>'%(query)] #if the user still wants to search for the original query he asked for
+			if(sname>=scontent and sname>=stag):						 #comparing the scores of name,content,tags suggestions and finding the max of the three
 				query = query_name
-				query_display = query_display_name
+				query_display = query_display_name						 #what query to display on the search result screen
 			if(scontent>sname and scontent>=stag):
 				query = query_content
 				query_display = query_display_content
@@ -328,20 +332,20 @@ def get_search(request):
 				query = query_tags
 				query_display = query_display_tags
 
-		if(fname==0 and fcontent==0 and ftags==0):
+		if(fname==0 and fcontent==0 and ftags==0):#if we didnt find any suggestion, neither did we find the query already indexed
 			res = es.search(index="nroer_pro",doc_type=select, body={"query": {
-																		"multi_match": {
+																		"multi_match": { 											#first do a multi_match
 																			"query" : query,
-																			"type": "best_fields",
-																			"fields": ["name^3", "altnames", "content^2", "tags"],
+																			"type": "best_fields",									#when multiple words are there in the query, try to search for those words in a single field
+																			"fields": ["name^3", "altnames", "content^2", "tags"],	#in which field to search the query
 																			"minimum_should_match": "30%"
 																			}
 																		},
-																	"rescore": {
+																	"rescore": {													#rescoring the top 50 results of multi_match
 																		"window_size": 50,
 																		"query": {
 																			"rescore_query": {
-																				"bool": {
+																				"bool": {											#rescoring using match phrase
 																					"should": [
 																						{"match_phrase": {"name": { "query": query, "slop":2}}},
 																						{"match_phrase": {"altnames": { "query": query, "slop": 2}}},
@@ -353,12 +357,12 @@ def get_search(request):
 																	}
 																})
 
-		else:
+		else: #if we found a suggestion or if the query exists as a phrase in one of the name/content/tags field
 			res = es.search(index="nroer_pro",doc_type=select, body={"query": {
 																		"multi_match": {
 																			"query": query,
 																			"fields": ["name^3", "altnames", "content^2", "tags"],
-																			"type": "phrase",
+																			"type": "phrase", #we are doing a match phrase on multi field.
 																			"slop": 5
 																		}
 																	}
@@ -386,14 +390,53 @@ def get_search(request):
 		if(len(res1_list)>0):
 			return render(request, 'esearch/basic.html', {'header':res_list, 'alternate': res1_list, 'content': med_list})
 		return render(request, 'esearch/basic.html', {'header':res_list, 'content': med_list})
-
+		return render()
 #if the search page is loaded for the first time
 	else:
 		form = SearchForm()
 
 	return render(request, 'esearch/sform.html', {'form':form})
 
+def get_contributions(select,group_select,author_name):
+	author_name+='\n'
+	i = 0
+	doc_types = ['image','video','text','application','audio','NotMedia']
+	try:
+		sql_id = int(author_map[str(author_name)])
+	except:
+		return []
+	else:
+		resultSet = []
+		while(True):
+			body = {
+				"query":{
+					"match_all":{}
+				},
+				"from":i,
+				"size":100
+			}
+			res = es.search(index = "nroer_pro",body = body)
+			l = len(res["hits"]["hits"])
+			if l > 0:
+				for doc in (res['hits']['hits']):
+					#is it possible that an author has contributed to a paper that does not belong to any group
+					if ("group_set" in (doc["_source"]).keys()) and ("contributors" in (doc["_source"]).keys()):
+						group_set = []
+						for group_id in doc["_source"]["group_set"]:
+							group_set.append(group_id["$oid"])
+						contributors = doc["_source"]["contributors"]
+						if group_select == "all":
+							if sql_id in contributors and doc["_source"]["type"] in doc_types:
+								resultSet.append(doc)
 
+						else:
+							if (sql_id in contributors) and (group_select in group_set) and doc["_source"]["type"] in doc_types:
+								resultSet.append(doc)
+			else:
+				break
+			i+=100
+		return resultSet
+	
 
 
 # phsug = {
