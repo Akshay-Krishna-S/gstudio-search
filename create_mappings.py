@@ -53,26 +53,26 @@ def create_map(document):
 
 
 def main():
-	dir = '/home/nazgul/Ashwin/data/rcs-repo/'
+	dir = '/home/nazgul/Desktop/nroer/rcs-repo/'
 	index_directory(dir)
 
-	# f = open("all_mappings.txt","a")
-	# for i in all_map.keys():
-	# 	strs=i+" "+all_map[i]+"\n"
-	# 	f.write(strs)
-	# f.close()
-	f = open("author_mappings.txt","a")
+	f = open("all_mappingsNROER.txt","a")
+	for i in all_map.keys():
+		strs=i+";"+all_map[i]+"\n"
+		f.write(strs)
+	f.close()
+	f = open("author_mappingsNROER.txt","a")
 	for i in author_map.keys():
 		print(i)
 		print(author_map[i])
-		strs=str(i)+" "+author_map[i][0]+" "+author_map[i][1]+"\n"
+		strs=str(i)+";"+author_map[i][0]+";"+author_map[i][1]+"\n"
 		f.write(strs)
 	f.close()
-	# f = open("group_mappings.txt","a")
-	# for i in group_map.keys():
-	# 	strs=i+" "+group_map[i]+"\n"
-	# 	f.write(strs)
-	# f.close()
+	f = open("group_mappingsNROER.txt","a")
+	for i in group_map.keys():
+		strs=i+";"+group_map[i]+"\n"
+		f.write(strs)
+	f.close()
 
 
 
