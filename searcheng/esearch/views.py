@@ -13,6 +13,34 @@ for l in authors:
 	auth_name = (k[1].split(';'))[1]
 	author_map[str(auth_name)] = k[0] #post gre sql ids
 f.close()
+def resources_in_group(res,group_select):
+	results = []
+	returnList = []
+	count=0
+	group_id = str(group_select)
+	print(group_id)
+	for i in res["hits"]["hits"]:
+		if "group_set" in i["_source"].keys():
+			print("inloop")
+			print(count)
+			count+=1
+			k = i["_source"]["group_set"]
+			print(k)
+			for j in k:
+				if group_id == j["$oid"]:
+					results.append(i)
+
+	# for i in results:
+	# 	if('if_file' in i.keys()):
+	# 		s = i['name']
+	# 		if '.' in s
+	# 			l=s.index('.')
+	# 		else:
+	# 			l=len(s)
+	print("for groups")
+	print(results)
+	return results
+
 def get_search(request):
 	flag = 0 
 	#if the search button is pressed, it is a POST request
@@ -24,19 +52,18 @@ def get_search(request):
 			query = form.cleaned_data['query']
 			print(query)
 			query_display = ""
-			select = request.POST['select'] #for filtering our search results
+			select = request.POST['select']
 			group_select = request.POST['group_select']
 
-			k = 0
 
-			if select == "Author":
-				f = open("esearch/author_mappings.txt","r")
-				docs = get_contributions(select,group_select,query)
-				for i in docs:
-					print i
-					print "\n\n\n"
+			if group_select=="all" and select!="Author":
+				pass
+			elif select=="Author":
+				get_contributions(select,group_select,query)
+			elif group_select!="all"and select!="Author":
+				pass
 
-			if(select=="all"):				#to search across all records
+			if(select=="all"):
 				select = "Author,image,video,text,application,audio,NotMedia"
 
 			# suggestion = {
@@ -340,8 +367,13 @@ def get_search(request):
 																		}
 																	}
 																})
+
+		if group_select!="all"and select!="Author":
+			restrial = resources_in_group(res,group_select)
+
 		hits = "No of docs found: %d" % res['hits']['total']
 		res_list = ['Showing results for %s :' % query_display, hits]
+		res_list = ['Showing results for %s :' % query_display]
 		#med_list is the list which will be passed to the html file.
 		med_list = []
 		for doc in res['hits']['hits']:					
@@ -354,7 +386,7 @@ def get_search(request):
 				med_list.append([doc['_id'],s[0:l],doc['_source']['if_file']['original']['relurl'],doc['_score'],doc['_source']['content']])	#printing only the id for the time being along with the node name
 			else:
 				med_list.append([doc['_id'],doc['_source']['name'],None,doc['_score'],doc['_source']['content']])
-
+		
 		if(len(res1_list)>0):
 			return render(request, 'esearch/basic.html', {'header':res_list, 'alternate': res1_list, 'content': med_list})
 		return render(request, 'esearch/basic.html', {'header':res_list, 'content': med_list})
@@ -364,7 +396,6 @@ def get_search(request):
 		form = SearchForm()
 
 	return render(request, 'esearch/sform.html', {'form':form})
-
 
 def get_contributions(select,group_select,author_name):
 	author_name+='\n'
@@ -406,3 +437,68 @@ def get_contributions(select,group_select,author_name):
 			i+=100
 		return resultSet
 	
+
+
+# phsug = {
+# 				"suggest": {
+# 					"text": query,
+# 						"phrase": {
+# 							"field": "name.trigram",
+# 							"min_word_length": 2,
+# 							"prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "name.trigram",
+# 					          "suggest_mode": "missing"
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						},
+# 						"phrase": {
+# 							"field": "altnames.trigram",
+# 							"min_word_length": 2,
+# 							"prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "altnames.trigram",
+# 					          "suggest_mode": "missing"
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						},
+# 						"phrase": {
+# 							"field": "content.trigram",
+# 							"min_word_length": 2,
+# 							"prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "content.trigram",
+# 					          "suggest_mode": "missing"
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						},
+# 						"phrase": {
+# 							"field": "tags",
+# 							# "min_word_length": 2,
+# 							# "prefix_length": 0,
+# 							"gram_size": 3,
+# 							"direct_generator": [ {
+# 					          "field": "tags",
+# 					          "suggest_mode": "missing",
+# 					          "prefix_length": 0,
+# 					          "min_word_length": 2,
+# 					        } ],
+# 					        "highlight": {
+# 					          "pre_tag": "<em>",
+# 					          "post_tag": "</em>"
+# 					        }
+# 						}
+# 					}
+# 			}
