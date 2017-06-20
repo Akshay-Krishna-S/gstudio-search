@@ -44,7 +44,7 @@ def resources_in_group(res,group_select):
 def get_search(request):
 	flag = 0 
 	#if the search button is pressed, it is a POST request
-	res1_list = []; fname = 0; fcontent =0; ftags = 0;
+	res1_list = [];
 	if request.method == 'POST':
 		form = SearchForm(request.POST)
 		if form.is_valid():
@@ -66,273 +66,49 @@ def get_search(request):
 			if(select=="all"):
 				select = "Author,image,video,text,application,audio,NotMedia"
 
-			# suggestion = {
-			# 	"entity-suggest": {
-			# 		"text": query,
-			# 		"term": {
-			# 			#"analyzer": "standard",
-			# 			"field":"name",
-			# 			"min_word_length": 2,
-			# 			"prefix_length": 0
-			# 		},
-			# 		"term": {
-			# 			#"analyzer": "standard",
-			# 			"field": "altnames",
-			# 			"min_word_length": 2,
-			# 			"prefix_length": 0
-			# 		},
-			# 		"term": {
-			# 			#"analyzer": "standard",
-			# 			"field": "content",
-			# 			"min_word_length": 2,
-			# 			"prefix_length": 0
-			# 		},
-			# 		"term": {
-			# 			#"analyzer": "standard",
-			# 			"field": "tags",
-			# 			"min_word_length": 2,
-			# 			"prefix_length": 0
-			# 		}
-			# 	}
-			# }
-			phsug_name = {												#json body of phrase suggestion in name field
-				"suggest": {
-					"text": query,										#the query for which we want to find suggestion
-					#"simple_phrase": {
-						"phrase": {											
-							"field": "name.trigram",					#in which indexed field to find the suggestion
-							"gram_size": 3,								#this is the max shingle size
-							"max_errors": 2,							#the maximum number of terms that can be misspelt in the query
-							"direct_generator": [ {
-					          "field": "name.trigram",
-					          #"suggest_mode": "missing",
-					          "min_word_length": 2,
-							  "prefix_length": 0,						#misspelling in a single word may exist in the first letter itself
-					          "suggest_mode":"missing"					#search for suggestions only if the query isnt present in the index
-					        } ],
-					        "highlight": {								#to highlight the suggested word
-					          "pre_tag": "<em>",
-					          "post_tag": "</em>"
-					        },
-					        "collate": {								#this is used to check if the returned suggestion exists in the index
-					        	"query": {
-					        		"inline": {
-					        			"match_phrase": {				#matching the returned suggestions with the existing index
-					        				"{{field_name}}": {
-						        				"query": "{{suggestion}}",
-						        				"slop": 2					
-						        			}
-					        			}
-					        		}
-					        	},
-					        	"params": {"field_name": "name"},
-					        	"prune": True							#to enable collate_match of suggestions
-					        }
-					},
-			}
-		}
-					#"simple_phrase": {
-					# 	"phrase": {
-					# 		"field": "altnames.trigram",
-					# 		"gram_size": 3,
-					# 		"max_errors": 2,
-					# 		"direct_generator": [ {
-					#           "field": "altnames.trigram",
-					#           "min_word_length": 2,
-					# 		  "prefix_length": 0,
-					#           "suggest_mode": "missing"
-					#         } ],
-					#         "highlight": {
-					#           "pre_tag": "<em>",
-					#           "post_tag": "</em>"
-					#         }
-					# 	#}
-					# },
-					#}
-			phsug_content = {											#json body of phrase suggestion in content field
-				"suggest": {
-					"text": query,
-					"phrase": {
-							"field": "content.trigram",
-							"gram_size": 3,
-							"max_errors": 2,
-							"direct_generator": [ {
-					          "field": "content.trigram",
-					          "min_word_length": 2,
-							  "prefix_length": 0,
-					          "suggest_mode": "missing"
-					        } ],
-					        "highlight": {
-					          "pre_tag": "<em>",
-					          "post_tag": "</em>"
-					        },
-					        "collate": {
-					        	"query": {
-					        		"inline": {
-					        			"match_phrase": {
-					        				"{{field_name}}": {
-						        				"query": "{{suggestion}}",
-						        				"slop": 3
-						        			}
-					        			}
-					        		}
-					        	},
-					        	"params": {"field_name": "content"},
-					        	"prune": True
-					        }
-					},
-				}
-			}
 
-			phsug_tags = {												#json body of phrase suggestion in content field
-				"suggest": {
-					"text": query,
-					"phrase": {
-							"field": "tags.trigram",
-							"gram_size": 3,
-							"max_errors": 2,
-							"direct_generator": [ {
-					          "field": "tags.trigram",
-					          "min_word_length": 2,
-							  "prefix_length": 0,
-					          "suggest_mode": "missing"
-					        } ],
-					        "highlight": {
-					          "pre_tag": "<em>",
-					          "post_tag": "</em>"
-					        },
-					        "collate": {
-					        	"query": {
-					        		"inline": {
-					        			"match_phrase": {
-					        				"{{field_name}}": {
-						        				"query": "{{suggestion}}",
-						        				"slop": 2
-						        			}
-					        			}
-					        		}
-					        	},
-					        	"params": {"field_name": "tags"},
-					        	"prune": True
-					        }
-					},
-				}
-			}
-		# res = es.suggest(body=suggestion, index='nroer_pro')
-		# print(res)
-		# if(" " not in query):
-		# 	res = es.suggest(body=suggestion, index='nroer_pro')
-		# 	print(res)
-		# 	if(len(res['entity-suggest'][0]['options'])>0):
-		# 		res1_list = ['Search instead for <a href="">%s</a>'%(query)]
-		# 		query = res['entity-suggest'][0]['options'][0]['text']
-		# 		query_display = '<em>'+query+'</em>'
-		# 		print("fuck", query)
+			phsug_name = get_suggestion_body(query,field_value = "name.trigram",slop_value = 2,field_name_value = "name")
+			phsug_content = get_suggestion_body(query,field_value = "content.trigram",slop_value = 3,field_name_value = "content")
+			phsug_tags = get_suggestion_body(query,field_value = "tags.trigram",slop_value = 2,field_name_value = "tags")
 
-		# else:
-		sname,scontent,stag = 0.0,0.0,0.0											#scores of first item in suggestions list with collate_match=True
-		query_name,query_content,query_tags="","",""								#the top search query with collate_match=true suggested by phsug_name, phsug_content, phsug_tags suggest bodies
-		query_display_name,query_display_content,query_display_tags="","",""		
-		res = es.suggest(body=phsug_name, index='nroer_pro')						#first we search for suggestion in the name field as it has the highest priority
-		print(res)																					
-		if(len(res['suggest'][0]['options'])>0):									#if we get a suggestion means the phrase doesnt exist in the index
-			for sugitem in res['suggest'][0]['options']:
-				if sugitem['collate_match'] == True:								#we find the suggestion with collate_match = True
-					query_name = sugitem['text']				
-					query_display_name = sugitem['highlighted']						#the query to be displayed onto the search results screen
-					sname = sugitem['score']
-					fname = 1
-					#print(res)
-					break
-		else:						#should slop be included in the search part here?
-			if(es.search(index='nroer_pro',doc_type=select,body={"query": {
-																	"match_phrase": {
-																		"name": query,
-																	}
-				}})['hits']['total']>0):
-				fname = 1															#set fname = 1 when we found a suggestion or we found a hit in the indexed data
-				query_name = query
 
-		#if(fname==0):
-		res = es.suggest(body=phsug_content, index='nroer_pro')
-		print(res)
-		if(len(res['suggest'][0]['options'])>0):
-			for sugitem in res['suggest'][0]['options']:
-				if sugitem['collate_match'] == True:
-					query_content = sugitem['text']
-					query_display_content = sugitem['highlighted']
-					scontent = sugitem['score']
-					fcontent = 1
-					break	
-		else:
-			if(es.search(index='nroer_pro',doc_type=select,body={"query": {
-																"match_phrase": {
-																	"content": query,
-																}
-			}})['hits']['total']>0):
-				fcontent = 1
-				query_content = query
 
-		#if(fname==0 and fcontent==0):
-		res = es.suggest(body=phsug_tags, index='nroer_pro')
-		print(res)
-		if(len(res['suggest'][0]['options'])>0):
-			for sugitem in res['suggest'][0]['options']:
-				if sugitem['collate_match'] == True:
-					query_tags = sugitem['text']
-					query_display_tags = sugitem['highlighted']
-					stag = sugitem['score']
-					ftags = 1
-					break	
-		else:
-			if(es.search(index='nroer_pro',doc_type=select,body={"query": {
-																"match_phrase": {
-																	"tags": query,
-																}
-			}})['hits']['total']>0):
-				ftags = 1
-				query_tags = query
+
+		queryNameInfo = [0,0.0,"",""] #[queryNameInfo[0],queryNameInfo[1],queryNameInfo[2],query_display_name]
+		queryContentInfo = [0,0.0,"",""]
+		queryTagsInfo = [0,0.0,"",""]
+		# queryNameInfo[1],queryContentInfo[1],queryTagsInfo[1] = 0.0,0.0,0.0											#scores of first item in suggestions list with collate_match=True
+		# queryNameInfo[2],queryContentInfo[2],queryTagsInfo[2]="","",""								#the top search query with collate_match=true suggested by phsug_name, phsug_content, phsug_tags suggest bodies
+		# query_display_name,query_display_content,query_display_tags="","",""		
+
+		get_suggestion(phsug_name,queryNameInfo,select,query)
+		get_suggestion(phsug_content,queryContentInfo,select,query)
+		get_suggestion(phsug_tags,queryTagsInfo,select,query)
 
 		#print(res)
-		print (fname,fcontent,ftags)
-			# if(len(res['suggest'][0]['options'])>0):
-			# 	for sugitem in res['suggest'][0]['options']:
-			# 		if sugitem['collate_match'] == True:
-			# 			query = sugitem['text']
-			# 			query_display = sugitem['highlighted']
-			# 			res1_list = ['Search instead for <a href="">%s</a>'%(query)]
-			# 			break
-			# 	if query_display==query:
-			# 		print("no collate match")
-			# 		query = res['suggest'][0]['options'][0]['text']
+		print (queryNameInfo[0],queryContentInfo[0],queryTagsInfo[0])
+		query_display = ""
 
-			# else:
-			# 	newq += qitem+" "
-			# query = newq
-			# print(query)
-			# if(len(res['suggest'][0]['options'])>0):
-			# 	query = (res['suggest'][0]['options'][0])['text']
-		
 		#what if all are 1 and 2/3 names are same but the third one has higher score
-		if((fname==1 and query_name==query) or (fcontent==1 and query_content==query) or (ftags==1 and query_tags==query)): 
+		if((queryNameInfo[0]==1 and queryNameInfo[2]==query) or (queryContentInfo[0]==1 and queryContentInfo[2]==query) or (queryTagsInfo[0]==1 and queryTagsInfo[2]==query)): 
 			#if the original query is the query to be searched
 			query_display = query
-		elif(fname==0 and fcontent==0 and ftags==0):																		
+		elif(queryNameInfo[0]==0 and queryContentInfo[0]==0 and queryTagsInfo[0]==0):																		
 			#if we didnt find any suggestion, neither did we find the query already indexed->query remains same
 			query_display = query
 		else: #if we found a suggestion 
 			res1_list = ['Search instead for <a href="">%s</a>'%(query)] #if the user still wants to search for the original query he asked for
-			if(sname>=scontent and sname>=stag):						 #comparing the scores of name,content,tags suggestions and finding the max of the three
-				query = query_name
-				query_display = query_display_name						 #what query to display on the search result screen
-			if(scontent>sname and scontent>=stag):
-				query = query_content
-				query_display = query_display_content
-			if(stag>scontent and stag>sname):
-				query = query_tags
-				query_display = query_display_tags
+			if(queryNameInfo[1]>=queryContentInfo[1] and queryNameInfo[1]>=queryTagsInfo[1]):						 #comparing the scores of name,content,tags suggestions and finding the max of the three
+				query = queryNameInfo[2]
+				query_display = queryNameInfo[3]					 #what query to display on the search result screen
+			if(queryContentInfo[1]>queryNameInfo[1] and queryContentInfo[1]>=queryTagsInfo[1]):
+				query = queryContentInfo[2]
+				query_display = queryContentInfo[3]
+			if(queryTagsInfo[1]>queryContentInfo[1] and queryTagsInfo[1]>queryNameInfo[1]):
+				query = queryTagsInfo[2]
+				query_display = queryTagsInfo[3]
 
-		if(fname==0 and fcontent==0 and ftags==0):#if we didnt find any suggestion, neither did we find the query already indexed
+		if(queryNameInfo[0]==0 and queryContentInfo[0]==0 and queryTagsInfo[0]==0):#if we didnt find any suggestion, neither did we find the query already indexed
 			res = es.search(index="nroer_pro",doc_type=select, body={"query": {
 																		"multi_match": { 											#first do a multi_match
 																			"query" : query,
@@ -438,67 +214,97 @@ def get_contributions(select,group_select,author_name):
 		return resultSet
 	
 
+def get_suggestion_body(query,field_value,slop_value,field_name_value):
+	phrase_suggest = {												#json body of phrase suggestion in name field
+		"suggest": {
+			"text": query,										#the query for which we want to find suggestion
+			#"simple_phrase": {
+				"phrase": {											
+					"field": field_value,					#in which indexed field to find the suggestion
+					"gram_size": 3,								#this is the max shingle size
+					"max_errors": 2,							#the maximum number of terms that can be misspelt in the query
+					"direct_generator": [ {
+			          "field": field_value,
+			          #"suggest_mode": "missing",
+			          "min_word_length": 2,
+					  "prefix_length": 0,						#misspelling in a single word may exist in the first letter itself
+			          "suggest_mode":"missing"					#search for suggestions only if the query isnt present in the index
+			        } ],
+			        "highlight": {								#to highlight the suggested word
+			          "pre_tag": "<em>",
+			          "post_tag": "</em>"
+			        },
+			        "collate": {								#this is used to check if the returned suggestion exists in the index
+			        	"query": {
+			        		"inline": {
+			        			"match_phrase": {				#matching the returned suggestions with the existing index
+			        				"{{field_name}}": {
+				        				"query": "{{suggestion}}",
+				        				"slop": slop_value					
+				        			}
+			        			}
+			        		}
+			        	},
+			        	"params": {"field_name": field_name_value},
+			        	"prune": True							#to enable collate_match of suggestions
+			        }
+				},
+			}
+		}
+	return phrase_suggest
 
-# phsug = {
-# 				"suggest": {
-# 					"text": query,
-# 						"phrase": {
-# 							"field": "name.trigram",
-# 							"min_word_length": 2,
-# 							"prefix_length": 0,
-# 							"gram_size": 3,
-# 							"direct_generator": [ {
-# 					          "field": "name.trigram",
-# 					          "suggest_mode": "missing"
-# 					        } ],
-# 					        "highlight": {
-# 					          "pre_tag": "<em>",
-# 					          "post_tag": "</em>"
-# 					        }
-# 						},
-# 						"phrase": {
-# 							"field": "altnames.trigram",
-# 							"min_word_length": 2,
-# 							"prefix_length": 0,
-# 							"gram_size": 3,
-# 							"direct_generator": [ {
-# 					          "field": "altnames.trigram",
-# 					          "suggest_mode": "missing"
-# 					        } ],
-# 					        "highlight": {
-# 					          "pre_tag": "<em>",
-# 					          "post_tag": "</em>"
-# 					        }
-# 						},
-# 						"phrase": {
-# 							"field": "content.trigram",
-# 							"min_word_length": 2,
-# 							"prefix_length": 0,
-# 							"gram_size": 3,
-# 							"direct_generator": [ {
-# 					          "field": "content.trigram",
-# 					          "suggest_mode": "missing"
-# 					        } ],
-# 					        "highlight": {
-# 					          "pre_tag": "<em>",
-# 					          "post_tag": "</em>"
-# 					        }
-# 						},
-# 						"phrase": {
-# 							"field": "tags",
-# 							# "min_word_length": 2,
-# 							# "prefix_length": 0,
-# 							"gram_size": 3,
-# 							"direct_generator": [ {
-# 					          "field": "tags",
-# 					          "suggest_mode": "missing",
-# 					          "prefix_length": 0,
-# 					          "min_word_length": 2,
-# 					        } ],
-# 					        "highlight": {
-# 					          "pre_tag": "<em>",
-# 					          "post_tag": "</em>"
-# 					        }
-# 						}
-# 					}
-# 			}
+
+def get_suggestion(suggestion_body,queryInfo,doc_types,query):
+	res = es.suggest(body=suggestion_body, index='nroer_pro')						#first we search for suggestion in the name field as it has the highest priority
+	print(res)																					
+	if(len(res['suggest'][0]['options'])>0):									#if we get a suggestion means the phrase doesnt exist in the index
+		for sugitem in res['suggest'][0]['options']:
+			if sugitem['collate_match'] == True:								#we find the suggestion with collate_match = True
+				queryInfo[0] = 1
+				queryInfo[1] = sugitem['score']
+				queryInfo[2] = sugitem['text']				
+				queryInfo[3] = sugitem['highlighted']						#the query to be displayed onto the search results screen
+				#print(res)
+				break
+	else:						#should slop be included in the search part here?
+		query_body = {"query":{"match_phrase":{"name": query,}}}
+		if(es.search(index='nroer_pro',doc_type=doc_types,body=query_body)['hits']['total']>0):
+			queryInfo[0] = 1							#set queryNameInfo[0] = 1 when we found a suggestion or we found a hit in the indexed data
+			queryInfo[2] = query
+
+
+
+
+# phsug_content = {											#json body of phrase suggestion in content field
+# 	"suggest": {
+# 		"text": query,
+# 		"phrase": {
+# 				"field": "content.trigram",
+# 				"gram_size": 3,
+# 				"max_errors": 2,
+# 				"direct_generator": [ {
+# 		          "field": "content.trigram",
+# 		          "min_word_length": 2,
+# 				  "prefix_length": 0,
+# 		          "suggest_mode": "missing"
+# 		        } ],
+# 		        "highlight": {
+# 		          "pre_tag": "<em>",
+# 		          "post_tag": "</em>"
+# 		        },
+# 		        "collate": {
+# 		        	"query": {
+# 		        		"inline": {
+# 		        			"match_phrase": {
+# 		        				"{{field_name}}": {
+# 			        				"query": "{{suggestion}}",
+# 			        				"slop": 3
+# 			        			}
+# 		        			}
+# 		        		}
+# 		        	},
+# 		        	"params": {"field_name": "content"},
+# 		        	"prune": True
+# 		        }
+# 			},
+# 		}
