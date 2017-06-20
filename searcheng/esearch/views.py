@@ -7,6 +7,34 @@ from .forms import SearchForm
 
 es = Elasticsearch(['http://elsearch:changeit@localhost:9200'])
 
+def resources_in_group(res,group_select):
+	results = []
+	returnList = []
+	count=0
+	group_id = str(group_select)
+	print(group_id)
+	for i in res["hits"]["hits"]:
+		if "group_set" in i["_source"].keys():
+			print("inloop")
+			print(count)
+			count+=1
+			k = i["_source"]["group_set"]
+			print(k)
+			for j in k:
+				if group_id == j["$oid"]:
+					results.append(i)
+
+	# for i in results:
+	# 	if('if_file' in i.keys()):
+	# 		s = i['name']
+	# 		if '.' in s
+	# 			l=s.index('.')
+	# 		else:
+	# 			l=len(s)
+	print("for groups")
+	print(results)
+	return results
+
 
 def get_search(request):
 	#if the search button is pressed, it is a POST request
@@ -19,6 +47,19 @@ def get_search(request):
 			print(query)
 			query_display = ""
 			select = request.POST['select']
+			group_select = request.POST['group_select']
+
+
+			if group_select=="all" and select!="Author":
+				pass
+			elif select=="Author":
+				author_contrib(request,group_select,select)
+			elif group_select!="all"and select!="Author":
+				pass
+
+
+
+
 			if(select=="all"):
 				select = "Author,image,video,text,application,audio,NotMedia"
 
@@ -322,8 +363,13 @@ def get_search(request):
 																		}
 																	}
 																})
+
+		if group_select!="all"and select!="Author":
+			restrial = resources_in_group(res,group_select)
+
 		hits = "No of docs found: %d" % res['hits']['total']
 		res_list = ['Showing results for %s :' % query_display, hits]
+		res_list = ['Showing results for %s :' % query_display]
 		#med_list is the list which will be passed to the html file.
 		med_list = []
 		for doc in res['hits']['hits']:					
@@ -336,7 +382,7 @@ def get_search(request):
 				med_list.append([doc['_id'],s[0:l],doc['_source']['if_file']['original']['relurl'],doc['_score'],doc['_source']['content']])	#printing only the id for the time being along with the node name
 			else:
 				med_list.append([doc['_id'],doc['_source']['name'],None,doc['_score'],doc['_source']['content']])
-
+		
 		if(len(res1_list)>0):
 			return render(request, 'esearch/basic.html', {'header':res_list, 'alternate': res1_list, 'content': med_list})
 		return render(request, 'esearch/basic.html', {'header':res_list, 'content': med_list})
@@ -346,6 +392,8 @@ def get_search(request):
 		form = SearchForm()
 
 	return render(request, 'esearch/sform.html', {'form':form})
+
+
 
 
 # phsug = {
