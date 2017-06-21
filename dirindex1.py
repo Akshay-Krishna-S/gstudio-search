@@ -2,7 +2,8 @@ from elasticsearch import Elasticsearch
 import os
 import sys
 import json
-
+reload(sys)  # Reload does the trick!
+sys.setdefaultencoding('UTF8')
 es = Elasticsearch("http://elsearch:changeit@localhost:9200")
 index_type = ""
 
@@ -60,6 +61,11 @@ def index_file(fname,k):
 		index_type = "DontCare"
 
 	es.index(index='nroer_pro', doc_type=index_type, id=document["id"]["$oid"], body=json.dumps(document))
+
+	if "contributors" in document.keys():
+		contributors = document["contributors"];
+		for contributor_id in contributors:
+			es.index(index = 'author_index', doc_type = contributor_id,id=document["id"]["$oid"], body = json.dumps(document))
 	print("indexed document %d" % k)
 
 def main():
@@ -69,7 +75,10 @@ def main():
 		print("Deleting the existing index for reindexing")
 		res = es.indices.delete(index='nroer_pro')
 		print("The delete response is %s " % res)
-
+	if(es.indices.exists('author_index')):
+		print("Deleting the existing author_index for reindexing")
+		res = es.indices.delete(index='author_index')
+		print("The delete response is %s " % res)
 	request_body = {
 			"settings": {
 				"number_of_shards": 1,
@@ -719,7 +728,7 @@ def main():
 	print("Response for index creation")
 	print(res)
 
-	dir = '/home/dvjsm/Gstudio/nroer/rcs-repo/'
+	dir = '/home/vignesh/Desktop/PS1/nroer/rcs-repo/'
 	index_directory(dir)
 
 main()

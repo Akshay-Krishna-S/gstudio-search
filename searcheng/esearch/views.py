@@ -26,8 +26,6 @@ for l in group_list:
 	group_map[str(group_id)] = k[1]
 f.close()
 
-
-
 def get_search(request): 
 	hits = ""
 	med_list = [] #med_list is the list which will be passed to the html file.
@@ -44,7 +42,7 @@ def get_search(request):
 
 			if select=="Author":
 				resultSet = []
-				resultSet = get_contributions(select,group_select,query)
+				resultSet = optimized_get_contributions(select,group_select,query)
 				hits =  "No of docs found: %d" % len(resultSet)
 				med_list = get_search_results(resultSet)
 				if(group_select == "all"):
@@ -303,4 +301,21 @@ def get_contributions(select,group_select,author_name):
 			else:
 				break
 			i+=100
+		return resultSet
+
+def optimized_get_contributions(select,group_select,author_name):
+	author_name+='\n'
+	i = 0
+	doc_types = ['image','video','text','application','audio','NotMedia']
+	try:
+		sql_id = int(author_map[str(author_name)])
+	except:
+		return []
+	else:
+		resultSet = []
+		res = es.search(index = "author_index",doc_type = sql_id)
+		if(group_select == "all"):
+			resultSet = res["hits"]["hits"]
+		else:
+			resultSet = resources_in_group(res) 
 		return resultSet
