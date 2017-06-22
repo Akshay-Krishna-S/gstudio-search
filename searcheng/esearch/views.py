@@ -313,9 +313,30 @@ def optimized_get_contributions(select,group_select,author_name):
 		return []
 	else:
 		resultSet = []
-		res = es.search(index = "author_index",doc_type = sql_id)
-		if(group_select == "all"):
-			resultSet = res["hits"]["hits"]
-		else:
-			resultSet = resources_in_group(res) 
+		temp = []
+		i = 0
+		siz = 10
+		body = {
+			"query":{
+				"match_all":{}
+			},
+			"from":0,
+			"size":siz
+		}
+		while(True):
+			body['from'] = i
+			res = es.search(index = "author_index",doc_type = sql_id,body = body)
+			l = len(res["hits"]["hits"])
+			print body
+			if l > 0 and l <=siz:
+				if group_select == "all":
+					resultSet.extend(res["hits"]["hits"])
+				else:
+					temp = resources_in_group(res,group_select)
+					resultSet.extend(temp)
+				if l < siz:
+					break		
+				else:
+					i+=siz		
+					print i	
 		return resultSet
