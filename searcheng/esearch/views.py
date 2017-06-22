@@ -2,29 +2,37 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from elasticsearch import Elasticsearch		
 import re
+import json
 from .forms import SearchForm
 
 es = Elasticsearch(['http://elsearch:changeit@localhost:9200'])
 author_map = {}
 group_map = {}
-f = open("esearch/author_mappings.txt","r")
-authors = f.readlines()
+# f = open("esearch/author_mappings.txt","r")
+# authors = f.readlines()
 
-for l in authors:
-	k = l.split(':')
-	auth_name = (k[1].split(';'))[1]
-	author_map[str(auth_name)] = k[0] #post gre sql ids
+# for l in authors:
+# 	k = l.split(':')
+# 	auth_name = (k[1].split(';'))[1]
+# 	author_map[str(auth_name)] = k[0] #post gre sql ids
 
-f.close()
+# f.close()
 
-f = open("esearch/group_mappingsNROER.txt","r")
-group_list = f.readlines()
+# f = open("esearch/group_mappingsNROER.txt","r")
+# group_list = f.readlines()
 
-for l in group_list:
-	k = l.split(';')
-	group_id = k[0]
-	group_map[str(group_id)] = k[1]
-f.close()
+# for l in group_list:
+# 	k = l.split(';')
+# 	group_id = k[0]
+# 	group_map[str(group_id)] = k[1]
+# f.close()
+
+
+with open('/home/dvjsm/djanpro/authormap.json') as fe:
+	author_map = json.load(fe)
+
+with open('/home/dvjsm/djanpro/groupmap.json') as fe:
+		group_map = json.load(fe)
 
 def get_search(request): 
 	hits = ""
@@ -264,11 +272,11 @@ def resources_in_group(res,group_select):
 	return results
 
 def get_contributions(select,group_select,author_name):
-	author_name+='\n'
+	#author_name+='\n'
 	i = 0
 	doc_types = ['image','video','text','application','audio','NotMedia']
 	try:
-		sql_id = int(author_map[str(author_name)])
+		sql_id = author_map[str(author_name)]
 	except:
 		return []
 	else:
@@ -304,11 +312,11 @@ def get_contributions(select,group_select,author_name):
 		return resultSet
 
 def optimized_get_contributions(select,group_select,author_name):
-	author_name+='\n'
+	#author_name+='\n'
 	i = 0
 	doc_types = ['image','video','text','application','audio','NotMedia']
 	try:
-		sql_id = int(author_map[str(author_name)])
+		sql_id = author_map[str(author_name)]
 	except:
 		return []
 	else:
@@ -327,7 +335,7 @@ def optimized_get_contributions(select,group_select,author_name):
 			body['from'] = i
 			res = es.search(index = "author_index",doc_type = sql_id,body = body)
 			l = len(res["hits"]["hits"])
-			print body
+			print (body)
 			if l > 0 and l <=siz:
 				if group_select == "all":
 					resultSet.extend(res["hits"]["hits"])
@@ -338,5 +346,5 @@ def optimized_get_contributions(select,group_select,author_name):
 					break		
 				else:
 					i+=siz		
-					print i	
+					#print i	
 		return resultSet

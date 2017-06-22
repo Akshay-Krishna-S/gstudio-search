@@ -1,15 +1,16 @@
 from django import forms
 import os 
-import sys
+import json
 CHOICES=[("all",'All'),("Author",'Users'),("image",'Images'),("video",'Video'),("text",'Text'),("audio","Audio")]
 GROUP_CHOICES=[]
 GROUP_CHOICES.append(("all","All"))
+group_map = {}
 
-f = open("esearch/group_mappingsNROER.txt","r")
-groups = f.readlines()
-for l in groups:
-	k=l.split(";")
-	tup = (k[0],k[1])
+with open("/home/dvjsm/djanpro/groupmap.json", 'r') as gm:
+	group_map = json.load(gm)
+
+for l in group_map.keys():
+	tup = (l, group_map[l])
 	tup = tuple(tup)
 	GROUP_CHOICES.append(tup)
 
