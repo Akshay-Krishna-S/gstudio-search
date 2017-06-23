@@ -315,6 +315,8 @@ def optimized_get_contributions(index_name, select, group, query):
 		res = es.search(index = index_name, doc_type = doctype, body = body)
 		l = len(res["hits"]["hits"])
 		print (body)
+		if(l==0):
+			return []
 		if l > 0 and l <= siz:
 			if(group == "all"):
 				resultSet.extend(res["hits"]["hits"])
@@ -323,8 +325,7 @@ def optimized_get_contributions(index_name, select, group, query):
 				resultSet.extend(temp)
 			if l < siz:
 				break		
-			else:
-				i+=siz	
+			i+=siz	
 
 	return resultSet
 
