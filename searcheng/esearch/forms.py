@@ -15,6 +15,6 @@ for l in group_map.keys():
 	GROUP_CHOICES.append(tup)
 
 class SearchForm(forms.Form):
-	query = forms.CharField(label = 'Query')
-	group_select = forms.ChoiceField(label = "Select Group",widget=forms.Select, choices=GROUP_CHOICES)
-	select = forms.ChoiceField(label = "Filter",widget=forms.Select, choices=CHOICES)
+	query = forms.CharField(label = '', widget = forms.TextInput(attrs={'placeholder': 'Search for'}), error_messages = False)
+	group = forms.ChoiceField(label = "Group", widget = forms.Select, choices = GROUP_CHOICES)
+	select = forms.ChoiceField(label = "Filter", widget = forms.Select, choices = CHOICES)
