@@ -58,12 +58,12 @@ def get_search(request):
 		if(select=="Author"):
 			resultSet = []
 			resultSet = optimized_get_contributions("author_index", select, group, query)
-			hits =  "No of docs found: %d" % len(resultSet)
+			hits =  "<h3>  No of docs found: <b>%d</b></h3>" % len(resultSet)
 			med_list = get_search_results(resultSet)
 			if(group == "all"):
-				res_list = ['Showing contributions of user %s in all groups:' % (query), hits]
+				res_list = ['<h3>  Showing contributions of user <b>%s</b> in all groups:</h3>' % (query), hits]
 			else:
-				res_list = ['Showing contributions of user %s in group %s":' % (query,group_map[str(group)]), hits]
+				res_list = ['<h3>  Showing contributions of user <b>%s</b> in group <b>%s</b>":</h3>' % (query,group_map[str(group)]), hits]
 			
 		else:
 			if(select=="all"):
@@ -180,11 +180,11 @@ def get_search(request):
 								}
 
 			resultSet = optimized_get_contributions("nroer_pro", select, group, query_body)
-			hits = "No of docs found: %d" % len(resultSet)
+			hits = "<h3>No of docs found: <b>%d</b></h3>" % len(resultSet)
 			if(group=="all"):
-				res_list = ['Showing results for %s :' % query_display, hits]
+				res_list = ['<h3>Showing results for <b>%s</b> :</h3' % query_display, hits]
 			else:
-				res_list = ['Showing results for %s in group "%s":' % (query_display,group_map[str(group)]), hits]
+				res_list = ['<h3>Showing results for <b>%s</b> in group <b>"%s"</b>:</h3>' % (query_display,group_map[str(group)]), hits]
 			med_list = get_search_results(resultSet)
 
 		paginator = Paginator(med_list, 10)

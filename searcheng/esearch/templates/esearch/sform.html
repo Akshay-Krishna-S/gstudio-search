@@ -2,12 +2,16 @@
 {% load static %}
 {% block body-content %}
 
+<style>
+	ul.errorlist {display: none;}
+	h3 {text-align:center;}
+	p {text-align:center;}
+	div.pagination {display: block; width: 1000px; margin: 0 auto; }
+</style>
 <div class='col-sm-5 col-sm-offset-3'> 
 	<form action="" method="get">
     <!-- {% csrf_token %} -->
-
     {{form}}
-    <!-- ul.errorlist {display: none;} -->
 	<input type="submit" value="Search" />
 	</form>
 </div> 
@@ -17,19 +21,19 @@
  -->
 
 <!-- printing the basic search result stats -->
-<!-- {% if header %} -->
+<br/> <br/> <br/> 
 {% for c in header %}
 	<p>{{c|safe}}</p>
 {% endfor %}
-<!-- {% endif %} -->
-<!-- 
-{% if alternate %} -->
+
+
 {% for c in alternate %}
 	<p>{{c|safe}}</p>
 {% endfor %}
-<!-- {% endif %} -->
+
 <!-- printing the search results -->
 {% if content %}
+<br>
 {% for c in content %}
 	<!-- c is an array having document id, document name, file path with extension -->
 	{% for k in c %}
@@ -38,27 +42,27 @@
 			<!-- rendering image types: png,jpeg,gif -->
 
 			{% if ".png" in k or ".jpeg" in k or ".gif" in k %}
-				<img src="{% static k %}" alt="Image" />
+				<p><img src="{% static k %}" alt="Image" /></p>
 			<!-- rendering audio types:mpeg,mp3 -->
 			{% elif ".mpeg" in k or ".mp3" in k %}
-				<audio controls>
+				<p><audio controls>
 						<source src="{% static k %}" type="audio/mpeg">
 						<source src="{% static k %}" type="audio/mp3">
 					Your browser does not support the audio tag.
-				</audio>
+				</audio></p>
 			<!-- rendering audio types:mp4,ogg,mov -->
 			{% elif ".mp4" in k or ".mov" in k or ".ogg" in k%}
-				<video width="320" height="240" controls>
+				<p><video width="320" height="240" controls>
 					<source src="{% static k %}" type="video/mp4">
 					<source src="{% static k %}" type="video/ogg">
 					<source src="{% static k %}" type="video/mov">
 					Your browser does not support the video tag.
-				</video>
+				</video></p>
 			<!-- rendering text files -->
 			{% elif ".txt" in k or ".pdf" in k or ".vtt" in k  or ".odt" in k or ".html" in k%}
-				<embed src="{% static k %}" width="800" height="300">
+				<p><embed src="{% static k %}" width="800" height="300"></p>
 			{% else %}
-				<p>{{k}}</p>
+				<p><b>{{k}}</b></p>
 			{% endif %}
 		{% else %}
 			<p>Media not present</p>
@@ -69,18 +73,14 @@
 {% endfor %}
 
 <div class="pagination">
-	<span class="step-links">
-		{% if content.has_previous %}
-			<a href="?page={{ content.previous_page_number }}&query={{ request.GET.query }}&group={{ request.GET.group }}&select={{ request.GET.select }}">previous</a>
-		{% endif %}
-
-		<span class="current">
-			Page {{ content.number }} of {{ content.paginator.num_pages }}.
-		</span>
-
-		{% if content.has_next %}
-			<a href="?page={{ content.next_page_number }}&query={{ request.GET.query }}&group={{ request.GET.group }}&select={{ request.GET.select }}">next</a>
-		{% endif %}	
+	<span class="step-links">	
+		{% for num in content.paginator.page_range %}
+		  {% ifequal num content.number %}
+		    <span class="current"><b>{{ num }}</b></span>
+		  {% else %}
+		    <a href="?page={{ num }}&query={{ request.GET.query }}&group={{ request.GET.group }}&select={{ request.GET.select }}">{{ num }}</a>
+		  {% endifequal %} 
+		{% endfor %}
 	</span>
 </div>
 
