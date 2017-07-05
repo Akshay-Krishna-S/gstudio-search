@@ -12,7 +12,9 @@
 	<form action="" method="get">
     <!-- {% csrf_token %} -->
     {{form}}
+    <!-- ul.errorlist {display: none;} -->
 	<input type="submit" value="Search" />
+	<a href="{% url 'advanced_search' %}">Advanced</a>
 	</form>
 </div> 
  <!-- <div class='col-sm-1'>

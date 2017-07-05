@@ -4,7 +4,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from elasticsearch import Elasticsearch		
 import re
 import json
-from .forms import SearchForm
+from .forms import SearchForm,AdvancedSearchForm
 
 es = Elasticsearch(['http://elsearch:changeit@localhost:9200'])
 author_map = {}
@@ -29,10 +29,10 @@ group_map = {}
 # f.close()
 
 
-with open('/home/dvjsm/djanpro/authormap.json') as fe:
+with open('/home/vignesh/Desktop/PS1-Codes/authormap.json') as fe:
 	author_map = json.load(fe)
 
-with open('/home/dvjsm/djanpro/groupmap.json') as fe:
+with open('/home/vignesh/Desktop/PS1-Codes/groupmap.json') as fe:
 		group_map = json.load(fe)
 
 hits = ""
@@ -329,19 +329,12 @@ def optimized_get_contributions(index_name, select, group, query):
 
 	return resultSet
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+def advanced_search(request):
+	if request.method == 'POST':
+		form = AdvancedSearchForm(request.POST)
+	else:
+		form = AdvancedSearchForm()
+	return render(request,"esearch/advanced_search.html",{'form':form})
 
 
 
