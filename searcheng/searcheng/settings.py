@@ -42,6 +42,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
 	'esearch',
+    'widget_tweaks',
 	'bootstrap_ui',
     'django.contrib.admin',
     'django.contrib.auth',
